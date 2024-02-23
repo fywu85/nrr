@@ -1,1 +1,1 @@
-# nrr
+# Neural Randomized Rounding
