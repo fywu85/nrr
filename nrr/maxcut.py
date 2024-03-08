@@ -83,6 +83,7 @@ def sdp(g, s, t):
     assignments = vector > 0
     rounded_cost = 0
     for u, v, data in g.edges(data=True):
+        print(u, v, data)
         if assignments[node_list.index(u)] != assignments[node_list.index(v)]:
             rounded_cost += data['weight']
     print('Relaxed Cost: {:.2f}'.format(-problem.value))
@@ -139,10 +140,10 @@ def visualize_solution(ax, g, s, t, x):
     for node in g.nodes():
         if node == s:
             node_colors.append('#E23F44')
-        elif x[node] == x[s]:
-            node_colors.append('#FFADB0')
         elif node == t:
             node_colors.append('#0047AB')
+        elif x[node] == x[s]:
+            node_colors.append('#FFADB0')
         else:
             node_colors.append('#0096FF')
     edge_colors = []
