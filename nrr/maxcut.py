@@ -9,8 +9,7 @@ plt.rcParams['font.size'] = 16
 plt.rcParams['font.sans-serif'] = \
     ['FreeSans'] + plt.rcParams['font.sans-serif']
 
-
-def ip(g, s, t):
+def ip(g, s, t, verbose=False):
     kernel = pywraplp.Solver.CreateSolver('SCIP')
     variables = {}
     if not kernel:
@@ -49,20 +48,23 @@ def ip(g, s, t):
     status = kernel.Solve()
     if status in [pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE]:
         cost = kernel.Objective().Value()
-        print('Cost: {:.2f}'.format(cost))
+        if verbose:
+            print('Cost: {:.2f}'.format(cost))
         x = []
         for node in np.sort(g.nodes()):
             name = 'n {}'.format(node)
             variable = variables[name]
             x.append(variable.solution_value())
-            print('Node {}: {}'.format(node, variable.solution_value()))
-        return cost, x
+            if verbose:
+                print('Node {}: {}'.format(node, variable.solution_value()))
+        return cost, x, None
     else:
         print("No solution found.")
-        return None, None
+        return None, None, None
 
-def sdp(g, s, t):
-    print('RUNNING SDP w/ MOSEK')
+def sdp(g, s, t, verbose=False):
+    if verbose:
+        print('RUNNING SDP w/ MOSEK')
     n = g.number_of_nodes()
     node_list = list(g.nodes())
     W = np.zeros((n, n))
@@ -86,14 +88,16 @@ def sdp(g, s, t):
         print(u, v, data)
         if assignments[node_list.index(u)] != assignments[node_list.index(v)]:
             rounded_cost += data['weight']
-    print('Relaxed Cost: {:.2f}'.format(-problem.value))
-    print('Rounded Cost: {:.2f}'.format(rounded_cost))
-    for node in np.sort(g.nodes()):
-        print('Node {}: {}'.format(node, assignments[node]))
+    if verbose:
+        print('Relaxed Cost: {:.2f}'.format(-problem.value))
+        print('Rounded Cost: {:.2f}'.format(rounded_cost))
+        for node in np.sort(g.nodes()):
+            print('Node {}: {}'.format(node, assignments[node]))
     return rounded_cost, assignments
 
-def sdp_v2(g, s, t):
-    print('>> RUNNING SDP V2 w/ MOSEK')
+def sdp_v2(g, s, t, verbose=False):
+    if verbose:
+        print('>> RUNNING SDP V2 w/ MOSEK')
     n = g.number_of_nodes()
     Y = cp.Variable((n, n), symmetric=True)
     objective = cp.Maximize(0.5 * sum(
@@ -110,11 +114,12 @@ def sdp_v2(g, s, t):
         w = g.edges[i, j]['weight']
         rounded_cost = rounded_cost + w * (1 - z[i] * z[j])
     rounded_cost *= 1 / 2
-    print('Relaxed Cost: {:.2f}'.format(relaxed_cost))
-    print('Rounded Cost: {:.2f}'.format(rounded_cost))
-    for node in np.sort(g.nodes()):
-        print('Node {}: {}'.format(node, z[node]))
-    return rounded_cost, z
+    if verbose:
+        print('Relaxed Cost: {:.2f}'.format(relaxed_cost))
+        print('Rounded Cost: {:.2f}'.format(rounded_cost))
+        for node in np.sort(g.nodes()):
+            print('Node {}: {}'.format(node, z[node]))
+    return rounded_cost, z, Y.value
 
 def compare_solutions(g, s, t, x_ip, x_sdp):
     fig = plt.figure(figsize=(10, 5))
